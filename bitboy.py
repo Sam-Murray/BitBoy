@@ -77,9 +77,6 @@ V_0=Tensor(0.001 * np.random.randn(*(D,P)))
 #,W_1,U_1,V_1
 paramList=[W_0,U_0,V_0]
 
-#initailizes reccurent networks
-recurrent0=RecurrentUnit(U_0,W_0,bp_lim)
-#recurrent1=RecurrentUnit(U_1,W_1,bp_lim)
 
 Loss=[]
 
@@ -87,7 +84,7 @@ for i in range(5000):
     clump=get_clump(x_train,N,S)
     HiddenDescriptor0=recurrent0(clump)
     layer1=dense(HiddenDescriptor0,V_0)
-    L=(loss(layer1,np.transpose(clump))+get_reg(paramList,reg))
+    HiddenDescriptor0=recurrent.simple_RNN(clump,U_0,W_0,bp_lim=bp_lim,backprop_s=True)
     print("Hoowoo")
     L.backward()
     print("WooHoo")
