@@ -1,4 +1,4 @@
-from mygrad.nnet.layers import dense, RecurrentUnit 
+from mygrad.nnet.layers import dense, recurrent
 from mygrad.nnet.activations import relu
 from mygrad import Tensor
 import numpy as np
@@ -82,9 +82,9 @@ Loss=[]
 
 for i in range(5000):
     clump=get_clump(x_train,N,S)
-    HiddenDescriptor0=recurrent0(clump)
-    layer1=dense(HiddenDescriptor0,V_0)
     HiddenDescriptor0=recurrent.simple_RNN(clump,U_0,W_0,bp_lim=bp_lim,backprop_s=True)
+    layer1=dense(HiddenDescriptor0,V_0)
+    L=(loss(layer1,np.transpose(clump))+get_reg(paramList,reg))
     print("Hoowoo")
     L.backward()
     print("WooHoo")
