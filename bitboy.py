@@ -1,7 +1,9 @@
 from mygrad.nnet.layers import dense, recurrent
 from mygrad.nnet.activations import relu
 from mygrad import Tensor
+from os import mkdir
 import numpy as np
+from itertools import product
 import csv
 
 def unzip(l):#I love you unzip
@@ -166,28 +168,32 @@ class bitboy():
         tot=tot + self.reg * (self.U**2).sum()
         tot=tot + self.reg * (self.V**2).sum()
         return tot
-    def save_params(self):
+    def save_params(self,Wfile="W.npy",Ufile="U.npy",Vfile="V.npy"):
         """Saves parameters to respective .npy files"""
-        np.save("W.npy",self.W)
-        np.save("U.npy",self.U)
-        np.save("V.npy",self.V)
-    def load_params(self):
+        np.save(Wfile,self.W)
+        np.save(Ufile,self.U)
+        np.save(Vfile,self.V)
+    def load_params(self,Wfile="W.npy",Ufile="U.npy",Vfile="V.npy"):
         """loads parameters from respective .npy files"""
-        self.W=np.load("W.npy",self.W)
-        self.U=np.load("U.npy",self.U)
-        self.V=np.load("V.npy",self.V)
+        self.W=np.load(Wfile)
+        self.U=np.load(Ufile)
+        self.V=np.load(Vfile)
+    def save_loss(self,lossFile="Loss.npy"):
+        np.save(lossFile,self.loss.data)
+    def return_loss(self):
+        return self.loss
     def train(self,iterations=5000):
         """Trains all parameters on training data.
             Params
             ------
             iterations(int):The number of training iterations."""
         self.loss=[]
-        for i in range(5000):
+        for i in range(iterations):
             clump=self.get_clump(self.x_train)
             
             HiddenDescriptor=recurrent.simple_RNN(clump,self.U,self.W,bp_lim=self.bp_lim)
             layer1=dense(HiddenDescriptor,self.V)
-            L=(self.get_loss(layer1,np.insert(clump, 0, 0, axis=0))+self.get_reg())
+            L=self.get_loss(layer1,np.insert(clump, 0, 0, axis=0))+self.get_reg()
             print("Hoowoo")
             L.backward()
             print("WooHoo")
@@ -197,6 +203,41 @@ class bitboy():
             print(i)
             print(L.data)
         self.save_params()
+
+def test_hyper(rates,regs):
+    #initailizes hyperparameters
+    #where d determines the number of trainable parameters for 1st layer
+    D=100
+    #where c is the context (1)
+    C=1 
+    #where P is the size of the prediction(output)
+    P=1
+    #where q determines the number of trainable parameters for 2nd layer
+    Q=10000
+    #where O is output size(1)
+    O=1
+    #Learning rate
+    rate=1e-7
+    #Regulation strength
+    reg=1e5
+    #Back Propigation Level
+    bp_lim=5
+    #sentence size
+    S=100
+    #clump size
+    N=200
+    i=0
+    losses=[]
+    ratereg=[]
+    for rate, reg in product(rates,regs):
+        
+        bb=bitboy(D,C,P,S,N,rate,reg)
+        bb.load_data()
+        bb.train(1)
+        losses.append(bb.return_loss())
+        ratereg.append([rate,reg])
+    np.save("ratereg.npy",np.array(ratereg))
+    np.save("Losses.npy",np.array(losses))
             
 if __name__ == "__main__":
     #initailizes hyperparameters
@@ -220,9 +261,9 @@ if __name__ == "__main__":
     S=100
     #clump size
     N=200
-    bb=bitboy(D,C,P,S,N,rate,reg)
-    bb.load_data()
-    bb.train(5000)
+    learning_rates = [1e-6,1e-7,1e-8,1e-9]
+    regularization_strengths = [1e5,1e4,1e3,1e1]
+    test_hyper(learning_rates,regularization_strengths )
     
     
     
