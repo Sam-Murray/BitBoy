@@ -252,18 +252,17 @@ if __name__ == "__main__":
     #where O is output size(1)
     O=1
     #Learning rate
-    rate=1e-7
+    rate=1e-9
     #Regulation strength
-    reg=1e5
+    reg=1e3
     #Back Propigation Level
     bp_lim=5
     #sentence size
     S=100
     #clump size
     N=200
-    learning_rates = [1e-6,1e-7,1e-8,1e-9]
-    regularization_strengths = [1e5,1e4,1e3,1e1]
-    test_hyper(learning_rates,regularization_strengths )
+    bb=bitboy(D,C,P,S,N,rate,reg)
+    bb.train(50000)
     
     
     
