@@ -233,7 +233,7 @@ def test_hyper(rates,regs):
         
         bb=bitboy(D,C,P,S,N,rate,reg)
         bb.load_data()
-        bb.train(1)
+        bb.train(1000)
         losses.append(bb.return_loss())
         ratereg.append([rate,reg])
     np.save("ratereg.npy",np.array(ratereg))
