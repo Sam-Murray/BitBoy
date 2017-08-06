@@ -307,7 +307,7 @@ if __name__ == "__main__":
     #clump size
     N=200
     bb=bitboy(D,C,P,S,N,rate,reg)
-    bb.load_data()
+    bb.load_data(515.584581339)
     bb.train(5000)
     
     
