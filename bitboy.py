@@ -64,6 +64,8 @@ class bitboy():
         self.bp_lim=bp_lim
         self.rate=rate
         self.reg=reg
+        #Initializes the hidden layer for
+        self.Hidden=np.zeros((1,D))
     def get_average_price(self,time,price,volume,part_leng=5):
         """Gets the average price of bitcoin over every part_leng transactions.
             Params
@@ -88,7 +90,7 @@ class bitboy():
         weightedPrice=np.einsum('ij,ij->i', tprice, tvol)/voltot
         return (weightedPrice, tTime)
 
-    def load_data(self,fileString=None,xtrain=195000,xtest=50000,xval=5000):
+    def load_data(self,data_normalizer,fileString=None,xtrain=195000,xtest=50000,xval=5000):
         """Loads training data/test data from file string, or from respective .npy files if fileString=None
            Params
            ------
@@ -101,6 +103,7 @@ class bitboy():
            ------
            None
            """
+        self.norm=data_normalizer
         if fileString == None:
             self.x_train=np.load("xtrain.npy")
             self.x_val=np.load("xval.npy")
@@ -124,6 +127,7 @@ class bitboy():
             self.x_train=aPriceData[:xtrain]
             self.x_val=aPriceData[xtrain:xtrain+xval]
             self.x_test=aPriceData[xtrain+xval:]
+
     def get_clump(self,x):
         """Clumps x data into a (S,N,1) array of random sequences in the x data; takes N random S length sequence from x data
             and transposes them
@@ -179,9 +183,52 @@ class bitboy():
         self.U=np.load(Ufile)
         self.V=np.load(Vfile)
     def save_loss(self,lossFile="Loss.npy"):
+        """Saves loss as a .npy function"""
         np.save(lossFile,self.loss.data)
+    def gen_numpy_params(self):
+        """Gets numpy arrays versions of the parameters. Used for making continuous pass."""
+        tW=np.zeros((np.array(self.W.data).size))
+        tU=np.zeros((np.array(self.U.data).size))
+        tV=np.zeros((np.array(self.V.data).size))
+        fU=np.array(self.U.data).flatten()
+        fW=np.array(self.W.data).flatten()
+        fV=np.array(self.V.data).flatten()
+        for i in range(len (fU)):
+                tU[i]=fU[i].data
+        for i in range(len (fV)):
+                tV[i]=fV[i].data
+        for i in range(len (fW)):
+                tW[i]=fW[i].data
+                
+        self.tW=tW.reshape((np.array(self.W.data).shape))
+        self.tU=tU.reshape((np.array(self.U.data).shape))
+        self.tV=tV.reshape((np.array(self.V.data).shape))
+        print(self.tW)
+        print(self.tU)
+        print(self.tV)
+    def continuous_pass(self,x_in):
+        """Allows forward pass outside of reccurent layer. Hidden layer stored in bitboy, so multiple passes on a continous
+        sequence can be called"""
+        x_in=x_in-self.norm
+        print("I might have some trouble")
+
+        p1=np.dot(x_in,self.tU)
+        p2=np.dot(self.Hidden,self.tW)
+
+        self.Hidden=np.tanh(p1+p2)
+        layer1=np.dot(self.Hidden,self.tV)+self.norm
+        print("done")
+        return layer1
+        
+        
     def return_loss(self):
+        """Returns: The loss"""
         return self.loss
+    def forward_pass(self,clump):
+        """Does a tensor forward pass through recurrent."""
+        HiddenDescriptor=recurrent.simple_RNN(clump,self.U,self.W,bp_lim=self.bp_lim)
+        layer1=dense(HiddenDescriptor,self.V)
+        return layer1
     def train(self,iterations=5000):
         """Trains all parameters on training data.
             Params
@@ -190,9 +237,7 @@ class bitboy():
         self.loss=[]
         for i in range(iterations):
             clump=self.get_clump(self.x_train)
-            
-            HiddenDescriptor=recurrent.simple_RNN(clump,self.U,self.W,bp_lim=self.bp_lim)
-            layer1=dense(HiddenDescriptor,self.V)
+            layer1=self.forward_pass(clump)
             L=self.get_loss(layer1,np.insert(clump, 0, 0, axis=0))+self.get_reg()
             print("Hoowoo")
             L.backward()
@@ -263,7 +308,7 @@ if __name__ == "__main__":
     N=200
     bb=bitboy(D,C,P,S,N,rate,reg)
     bb.load_data()
-    bb.train(50000)
+    bb.train(5000)
     
     
     
